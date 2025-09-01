@@ -47,9 +47,9 @@ This project builds a **county–year panel (2014–2023)** for California and e
 - **Equity views:** charger access per capita or per EV across income/urbanization groups
 
 **Model (schematic)**
-$ \[\text{GasolineUse}_{c,t} = \beta \cdot \text{Chargers}_{c,t} + X_{c,t}'\gamma + \alpha_c + \delta_t + \varepsilon_{c,t}\] $
-- $\(\alpha_c\)$: county fixed effects; $\(\delta_t\)$: year fixed effects  
-- Cluster SEs by county; multiple specs for robustness
+$ \text{gas\_per\_capita}_{it} &= \beta_1\,\text{level1}_{it} + \beta_2\,\text{level2}_{it} + \beta_3\,\text{dc\_fast}_{it} + \beta_4\,\text{ev\_adoption}_{it} \\
+&\quad + \beta_5\,\text{income}_{it} + \beta_6\,\text{charger\_ratio}_{it} + \beta_7\,\text{capacity\_ratio}_{it} + \beta_8\,\text{coverage}_{it} \\
+&\quad + \alpha_i + \gamma_t + \epsilon $
 
 **Outputs**
 - Clean tables of coefficients (with units and interpretation)
