@@ -1,4 +1,4 @@
-# ⚡ EV Charging, Gasoline Use & Equity in California (2014–2023)
+# ⚡ Driving Change: Assessing the Impact of Electric Vehicle Charging Infrastructure on Gasoline Consumption Across California Counties
 
 **Author:** Khoi Van  
 **Program:** Summer Research — Denison University
