@@ -1,0 +1,489 @@
+---
+title: "Summer Research Code"
+date: "July 26, 2025"
+format: 
+  html:
+    number-sections: true
+    number-depth: 3
+    fig-dpi: 500
+    fig-align: center
+    fig-height: 4
+    fig-width: 6
+execute: 
+  echo: true
+  warning: false
+  message: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# Load necessary libraries
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(ggplot2)
+library(ggfortify)
+library(maps)
+library(plm)
+library(fixest)
+library(Synth)
+library(scales)
+
+library(tigris)
+library(sf)
+library(tmap)
+library(colorspace)
+library(GGally)
+```
+
+```{r}
+vehicle_fleet <- read.csv("data/Vehicle_Fleet_Population.csv")
+total_ev_by_county <- vehicle_fleet %>%
+  filter(Fuel.Type == "Battery Electric (BEV)" & Data.Year <= 2023) %>%
+  group_by(County, Data.Year) %>%
+  summarize(Total_BEVs = sum(Number.of.Vehicles, na.rm = TRUE)) %>%
+  ungroup()
+chargers2014 <- read.csv("data/chargers2014.csv")
+chargers2015 <- read.csv("data/chargers2015.csv")
+chargers2016 <- read.csv("data/chargers2016.csv")
+chargers2017 <- read.csv("data/chargers2017.csv")
+chargers2018 <- read.csv("data/chargers2018.csv")
+chargers2019 <- read.csv("data/chargers2019.csv")
+chargers2020 <- read.csv("data/chargers2020.csv")
+chargers2021 <- read.csv("data/chargers2021.csv")
+chargers2022 <- read.csv("data/chargers2022.csv")
+chargers2023 <- read.csv("data/chargers2023.csv")
+zip <- read.csv("data/uszips.csv")
+income2014 <- read.csv("data/income14all.csv")
+income2015 <- read.csv("data/income15all.csv")
+income2016 <- read.csv("data/income16all.csv")
+income2017 <- read.csv("data/income17all.csv")
+income2018 <- read.csv("data/income18all.csv")
+income2019 <- read.csv("data/income19all.csv")
+income2020 <- read.csv("data/income20all.csv")
+income2021 <- read.csv("data/income21all.csv")
+income2022 <- read.csv("data/income22all.csv")
+income2023 <- read.csv("data/income23all.csv")
+# Gasoline consumption is in millions of gallons
+gasoline <- read.csv("data/Gasoline_Consumption.csv")
+# Population data
+pop2020s <- read.csv("data/population20-24.csv")
+pop2010s <- read.csv("data/population10-19.csv")
+```
+
+## A glimpse at the data
+
+```{r}
+str(total_ev_by_county)
+str(chargers2014)
+str(income2014)
+str(zip)
+str(gasoline)
+str(pop2020s)
+str(pop2010s)
+```
+
+## Data Cleaning and Integration
+
+```{r}
+# Clean county names for merging
+gasoline <- gasoline %>% mutate(County = str_to_title(County))
+
+```
+
+```{r}
+# Gasoline sales by county, most recent year (adjust as needed)
+gasoline_long <- gasoline %>%
+  select(County, starts_with("Estimated")) %>%
+  pivot_longer(
+    cols = matches("^Estimated(\\.Totals)?\\.\\d{4}$"),
+    names_to = "year",
+    values_to = "gas_est"
+  ) %>%
+  mutate(
+    year = as.numeric(str_extract(year, "\\d{4}")),
+    gas_est = as.numeric(gas_est)
+  )
+```
+
+#### Cleaning charger data
+
+```{r}
+# Add a year column to each charger dataset before combining
+chargers2014$year <- 2014
+chargers2015$year <- 2015
+chargers2016$year <- 2016
+chargers2017$year <- 2017
+chargers2018$year <- 2018
+chargers2019$year <- 2019
+chargers2020$year <- 2020
+chargers2021$year <- 2021
+chargers2022$year <- 2022
+chargers2023$year <- 2023
+
+# Combine all years into one dataframe
+all_chargers <- do.call(rbind, list(
+  chargers2014, chargers2015, # ..., chargers2023
+  chargers2016, chargers2017, chargers2018, chargers2019, chargers2020, chargers2021, chargers2022, chargers2023
+))
+
+# Convert both to character before joining
+all_chargers$ZIP <- as.character(all_chargers$ZIP)
+zip$zip <- as.character(zip$zip)
+
+chargers_with_county <- all_chargers %>%
+  left_join(zip, by = c("ZIP" = "zip")) %>%
+  filter(state_id == "CA") # Only California
+
+# Replace NAs with zeros for counting
+chargers_with_county <- chargers_with_county %>%
+  mutate(
+    level1 = ifelse(is.na(EV.Level1.EVSE.Num), 0, EV.Level1.EVSE.Num),
+    level2 = ifelse(is.na(EV.Level2.EVSE.Num), 0, EV.Level2.EVSE.Num),
+    dc_fast = ifelse(is.na(EV.DC.Fast.Count), 0, EV.DC.Fast.Count)
+  )
+
+# Summarize by year and county
+county_charger_counts <- chargers_with_county %>%
+  group_by(year, county_name) %>%
+  summarise(
+    level1_chargers = sum(level1, na.rm=TRUE),
+    level2_chargers = sum(level2, na.rm=TRUE),
+    dc_fast_chargers = sum(dc_fast, na.rm=TRUE),
+    .groups = "drop"
+  )
+```
+
+#### Cleaning population data
+
+```{r}
+pop2010s_sub <- pop2010s[, c("Geographic.Area", "X2014", "X2015", "X2016", "X2017", "X2018", "X2019")]
+pop2020s_sub <- pop2020s[, c("Geographic.Area", "X2020", "X2021", "X2022", "X2023")]
+
+# Ensure area names match
+pop2010s_sub$Geographic.Area <- trimws(pop2010s_sub$Geographic.Area)
+pop2020s_sub$Geographic.Area <- trimws(pop2020s_sub$Geographic.Area)
+
+# Merge on 'Geographic.Area'
+pop_merged <- merge(pop2010s_sub, pop2020s_sub, by = "Geographic.Area", all = TRUE)
+pop_merged <- subset(pop_merged, Geographic.Area != "California")
+pop_merged$Geographic.Area <- sub("^\\.", "", pop_merged$Geographic.Area)
+pop_merged$Geographic.Area <- sub(" County, California$", "", pop_merged$Geographic.Area)
+names(pop_merged) <- gsub("^X", "", names(pop_merged))
+
+str(pop_merged)
+```
+
+#### Cleaning income data
+
+```{r}
+extract_ca_counties <- function(df, year) {
+  df %>%
+    filter(Postal.Code == "CA", 
+           str_detect(Name, "County"),
+           !is.na(Median.Household.Income),
+           Median.Household.Income != ".") %>%
+    mutate(Median.Household.Income = as.numeric(gsub(",", "", Median.Household.Income)),
+           year = year) %>%
+    select(County = Name, Median.Household.Income, year)
+}
+
+# List of years
+years <- 2014:2023
+
+# List of corresponding data frames (change these names if your data frame names differ)
+income_dfs <- mget(paste0("income", years))
+
+# Extract and combine
+ca_income_list <- Map(extract_ca_counties, income_dfs, years)
+ca_income_all <- bind_rows(ca_income_list)
+
+ca_income_all <- ca_income_all %>%
+  mutate(County = str_remove(County, " County$"))
+```
+
+
+```{r}
+# Merge all data to construct a panel (county-year)
+panel <- total_ev_by_county %>%  
+  left_join(gasoline_long, by = c("County" = "County", "Data.Year" = "year")) %>%
+  left_join(county_charger_counts, by = c("County" = "county_name", "Data.Year" = "year")) %>%
+  filter(Data.Year >= 2013)
+```
+
+## Some basic calculations
+
+#### Get EV adoption rate
+
+```{r}
+# Create a version of the data with years shifted forward by 1
+panel_prev <- panel %>%
+  select(County, Data.Year, Total_BEVs) %>%
+  mutate(Data.Year = Data.Year + 1) %>%
+  rename(ev_prev = Total_BEVs)
+
+# Join original and shifted data
+panel_joined <- panel %>%
+  left_join(panel_prev, by = c("County", "Data.Year"))
+
+# Calculate EV adoption rate
+panel_joined <- panel_joined %>%
+  mutate(ev_adoption_rate = ifelse(!is.na(ev_prev) & ev_prev > 0,
+                                   100 * (Total_BEVs - ev_prev) / ev_prev,
+                                   NA_real_))
+
+str(panel_joined)
+  
+```
+
+```{r}
+# Merge population data
+pop_long <- pop_merged %>%
+  pivot_longer(
+    cols = -Geographic.Area,
+    names_to = "Data.Year",
+    values_to = "Population"
+  ) %>%
+  rename(County = Geographic.Area) %>%
+  mutate(Data.Year = as.numeric(Data.Year))
+
+# Merge with panel data
+panel_full <- panel_joined %>%
+  left_join(pop_long, by = c("County", "Data.Year"))
+```
+
+#### Get gasoline consumption per capita (in gallons)
+
+```{r}
+# Gasoline consumption per capita (in gallons)
+panel_full <- panel_full %>%
+  mutate(gas_est = as.numeric(gsub(",", "", gas_est)),
+         gas_per_capita = gas_est / Population * 1000000)
+```
+
+```{r}
+# Merge median income data
+panel_full <- panel_full %>%
+  left_join(ca_income_all, by = c("County", "Data.Year" = "year"))
+```
+
+#### Get charger to EV ratio (number of chargers per 100 EVs)
+
+```{r}
+# Charger to EV ratio (number of chargers per 100 EVs)
+panel_full <- panel_full %>%
+  mutate(charger_to_100ev_ratio = 100 * (level1_chargers + level2_chargers + dc_fast_chargers)/Total_BEVs)
+```
+
+#### Get charging capacity per EV (miles/EV)
+
+```{r}
+# Charging capacity per EV (miles/EV)
+panel_full <- panel_full %>%
+  mutate(charge_capacity_ratio = (level1_chargers * 5 + level2_chargers * 50 + dc_fast_chargers * 100)/Total_BEVs)
+```
+
+#### Get area coverage percentage for each county
+
+```{r}
+# Calculate the percentage of area within 5 mile of an EV charger
+buffer_radius <- 1609 * 5 # 5 mile in meters
+
+# 1. Load county polygons
+ca_counties <- counties(state = "CA", cb = TRUE, year = 2022, class = "sf")
+ca_counties <- st_transform(ca_counties, crs = 3310) # Projected CRS (meters) for area calculations
+
+# Filter only CA chargers with lat/lon
+ca_charger_points <- chargers_with_county %>%
+  filter(!is.na(lat), !is.na(lng), state_id == "CA") %>%
+  select(year, county_name, lat, lng)
+
+# Convert to spatial points
+ca_charger_sf <- st_as_sf(ca_charger_points, coords = c("lng", "lat"), crs = 4326)
+ca_charger_sf <- st_transform(ca_charger_sf, crs = 3310)
+
+ca_charger_sf$geometry <- st_buffer(ca_charger_sf$geometry, dist = buffer_radius)
+
+# For each charger, clip its buffer to the county polygon, then union per county+year
+# This will create a new sf object with only the intersecting areas and attributes from both layers
+charger_county_clipped <- st_intersection(
+  ca_charger_sf,
+  ca_counties %>% select(NAME)
+)
+
+charger_area_by_county_year <- charger_county_clipped %>%
+  group_by(NAME, year) %>%
+  summarise(coverage_geom = st_union(geometry), .groups = "drop") %>%
+  left_join(
+    ca_counties %>% st_drop_geometry() %>% select(NAME, county_area = ALAND),
+    by = "NAME"
+  ) %>%
+  mutate(
+    coverage_area = st_area(coverage_geom),
+    percent_coverage = as.numeric(coverage_area) / as.numeric(county_area) * 100
+  )
+```
+
+```{r}
+panel_full <- panel_full %>%
+  left_join(charger_area_by_county_year, by = c("County" = "NAME", "Data.Year" = "year"))
+
+summary(charger_area_by_county_year$percent_coverage)
+```
+
+## OLS Model
+
+```{r}
+model_fixest <- feols(
+  gas_per_capita ~ level1_chargers + level2_chargers + dc_fast_chargers + ev_adoption_rate + Median.Household.Income + charger_to_100ev_ratio + charge_capacity_ratio + percent_coverage | County + Data.Year, data = panel_full
+  )
+
+summary(model_fixest)
+```
+
+#### Checking linear model assumptions
+
+```{r}
+# Extract fitted values and residuals from your feols model
+df_diag <- data.frame(
+  fitted = fitted(model_fixest),
+  residuals = residuals(model_fixest)
+)
+
+# 1. Residuals vs Fitted Plot
+p1 <- ggplot(df_diag, aes(x = fitted, y = residuals)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs(title = "Residuals vs Fitted",
+       x = "Fitted Values",
+       y = "Residuals")
+print(p1)
+
+# 2. Q-Q Plot to check residual normality
+p2 <- ggplot(df_diag, aes(sample = residuals)) +
+  stat_qq() +
+  stat_qq_line() +
+  labs(title = "Normal Q-Q",
+       x = "Theoretical Quantiles",
+       y = "Residuals")
+print(p2)
+```
+
+## Scatterplot
+
+#### Correlation between number of chargers per 100 EV and gasoline consumption per capita
+
+```{r}
+ggplot(filter(panel_full, Data.Year >= 2014),
+       aes(x = charger_to_100ev_ratio, y = gas_per_capita, color = Median.Household.Income)) +
+  geom_point() +
+  facet_wrap(~ Data.Year, ncol = 3) +
+  scale_color_viridis_c() +
+  scale_x_log10(breaks = c(3, 10, 30, 100, 300))+
+  geom_smooth(method = "lm", se = FALSE, formula = y ~ log(x), color = "red")+
+  labs(x = "Chargers per 100 EVs, log scale", y = "Gasoline (gal) per capita", color = "Median Income")
+
+```
+
+#### Correlation between charging capacity per EV and gasoline consumption per capita
+
+```{r}
+ggplot(panel_full, aes(x = charge_capacity_ratio, y = gas_per_capita, color = ev_adoption_rate)) +
+  geom_point(alpha = 0.5) +
+  scale_x_log10() +
+  geom_smooth(method = "lm", se = FALSE, formula = y ~ log(x))+
+  labs(
+    x = "Charging Capacity (miles/EV, log scale)",
+    y = "Gasoline per capita",
+    color = "EV Adoption Rate (%)"
+  )
+```
+
+#### Correlation between EV adoption rate and gasoline consumption per capita
+
+```{r}
+ggplot(panel_full, aes(x = ev_adoption_rate, y = gas_per_capita)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(x = "EV Adoption Rate (%)", y = "Gasoline per capita")
+
+```
+
+#### Correlation matrix
+
+```{r}
+ggpairs(panel_full, columns = c("level1_chargers","level2_chargers","dc_fast_chargers","charger_to_100ev_ratio","gas_per_capita"))+
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
+    axis.text.y = element_text(size = rel(0.8))
+)
+
+```
+
+## Maps
+
+#### Gasoline by capita by county, in 2018
+
+```{r}
+ca_map <- merge(ca_counties, panel_full %>% filter(Data.Year==2018), by.x="NAME", by.y="County")
+ggplot(ca_map) +
+  geom_sf(aes(fill = gas_per_capita)) +
+  scale_fill_viridis_c() +
+  labs(fill = "Gasoline (gal) per cap.")
+
+```
+
+#### Gasoline by capita by county, in 2023
+
+```{r}
+ca_map <- merge(ca_counties, panel_full %>% filter(Data.Year==2023), by.x="NAME", by.y="County")
+ggplot(ca_map) +
+  geom_sf(aes(fill = gas_per_capita)) +
+  scale_fill_viridis_c() +
+  labs(fill = "Gasoline (gal) per cap.")
+
+```
+
+#### Number of chargers per 100 EVs by county, in 2018
+
+```{r}
+ggplot(ca_map) +
+  geom_sf(aes(fill = charger_to_100ev_ratio)) +
+  scale_fill_viridis_c() +
+  labs(fill = "Chargers per 100 EVs")
+
+```
+
+#### Number of chargers per 100 EVs by county, in 2023
+
+```{r}
+ggplot(ca_map) +
+  geom_sf(aes(fill = charger_to_100ev_ratio)) +
+  scale_fill_viridis_c() +
+  labs(fill = "Chargers per 100 EVs")
+
+```
+
+#### Charger capacity to EV ratio, in 2018
+
+```{r}
+ggplot(ca_map) +
+  geom_sf(aes(fill = charge_capacity_ratio)) +
+  scale_fill_viridis_c() +
+  labs(fill = "Charge capacity to EV ratio")
+
+```
+
+#### Charger capacity to EV ratio, in 2023
+
+```{r}
+ggplot(ca_map) +
+  geom_sf(aes(fill = charge_capacity_ratio)) +
+  scale_fill_viridis_c() +
+  labs(fill = "Charge capacity to EV ratio")
+
+```
+
