@@ -2,7 +2,7 @@
 
 **Author:** Khoi Van
 
-**Project Advisor:** Alexandre Scarcioffolo
+**Project Advisor:** Dr. Alexandre Scarcioffolo, Professor at Denison Data Analytics Department
 
 **Program:** Lisska Summer Scholars Research - Denison University
 
@@ -96,4 +96,4 @@ where $\alpha_i$ and $\gamma_t$ are county and year fixed effects respectively. 
 
 ## 📬 Contact
 - Khoi Van: van_k1@denison.edu
-- Alexandre Scarcioffolo: scarcioffoloa@denison.edu
+- Dr. Alexandre Scarcioffolo: scarcioffoloa@denison.edu
