@@ -24,7 +24,7 @@ This project builds a **county–year panel (2014–2023)** for California and e
 ## 🗂 Project Structure
 
 ```
-├── data/                                  # relevant data files (sources documented in research paper)
+├── data/                                  # relevant data files (see documentations in the "Data" section of research paper)
 ├── .gitignore                             # ignores history/caches/local libs
 ├── Khoi Van - Summer Research Paper.pdf   # research paper
 ├── Khoi Van - Summer Research Poster.pdf  # research poster
