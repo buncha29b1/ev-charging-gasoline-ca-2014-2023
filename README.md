@@ -48,6 +48,8 @@ This project builds a **county–year panel (2014–2023)** for California and e
 
 **Model (schematic)**
 
+Our study employs a two-way fixed-effects OLS regression model:
+
 ```math
 \begin{aligned}
 \text{gas\_per\_capita}_{it} &= \beta_1\,\text{level1}_{it} + \beta_2\,\text{level2}_{it} + \beta_3\,\text{dc\_fast}_{it} + \beta_4\,\text{ev\_adoption}_{it} \\
@@ -55,6 +57,8 @@ This project builds a **county–year panel (2014–2023)** for California and e
 &\quad + \alpha_i + \gamma_t + \epsilon
 \end{aligned}
 ```
+
+where $\alpha_i$ and $\gamma_t$ are county and year fixed effects respectively. Standard errors are clustered by county to account for serial correlation.
 
 **Outputs**
 - Clean tables of coefficients (with units and interpretation)
