@@ -35,3 +35,27 @@ This project builds a **county–year panel (2014–2023)** for California and e
 ├── Summer_Research_Code_Final.Rmd         # main analysis (R/Quarto)
 ├── Summer_Research_Code_Final.html        # rendered notebook (open in browser)
 ```
+
+---
+
+## 🛠 Methodology
+
+**Key variables (examples)**
+- **Outcome:** gasoline use (per capita / per registered vehicle) at county–year
+- **Main regressor:** public chargers (per 1k people / per 1k vehicles / per EV)
+- **Controls (optional):** EV share, income, urbanization, unemployment, population
+- **Equity views:** charger access per capita or per EV across income/urbanization groups
+
+**Model (schematic)**
+\[
+\text{GasolineUse}_{c,t} = \beta \cdot \text{Chargers}_{c,t} + X_{c,t}'\gamma + \alpha_c + \delta_t + \varepsilon_{c,t}
+\]
+- \(\alpha_c\): county fixed effects; \(\delta_t\): year fixed effects  
+- Cluster SEs by county; multiple specs for robustness
+
+**Outputs**
+- Clean tables of coefficients (with units and interpretation)
+- Maps/plots of charger access and gasoline trends
+- Equity charts (e.g., charger access by income quintile)
+
+---
