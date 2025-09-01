@@ -43,7 +43,7 @@ This project builds a **county–year panel (2014–2023)** for California and e
 **Key variables (examples)**
 - **Outcome:** gasoline use (per capita / per registered vehicle) at county–year
 - **Main regressor:** public chargers (per 1k people / per 1k vehicles / per EV)
-- **Controls (optional):** EV share, income, urbanization, unemployment, population
+- **Controls (optional):** EV share and income
 - **Equity views:** charger access per capita or per EV across income/urbanization groups
 
 **Model (schematic)**
