@@ -56,7 +56,6 @@ $$
 \end{aligned}
 $$
 
-
 **Outputs**
 - Clean tables of coefficients (with units and interpretation)
 - Maps/plots of charger access and gasoline trends
