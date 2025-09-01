@@ -48,6 +48,8 @@ This project builds a **county–year panel (2014–2023)** for California and e
 
 **Model (schematic)**
 
+**Two-way fixed effects model (county \( \alpha_i \), year \( \gamma_t \); SEs clustered by county)**
+
 $$
 \begin{aligned}
 \text{gas\_per\_capita}_{it} &= \beta_1\,\text{level1}_{it} + \beta_2\,\text{level2}_{it} + \beta_3\,\text{dc\_fast}_{it} + \beta_4\,\text{ev\_adoption}_{it} \\
@@ -55,6 +57,7 @@ $$
 &\quad + \alpha_i + \gamma_t + \epsilon
 \end{aligned}
 $$
+
 
 **Outputs**
 - Clean tables of coefficients (with units and interpretation)
