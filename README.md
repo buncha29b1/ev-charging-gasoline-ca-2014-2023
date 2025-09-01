@@ -47,7 +47,8 @@ This project builds a **county–year panel (2014–2023)** for California and e
 - **Equity views:** charger access per capita or per EV across income/urbanization groups
 
 **Model (schematic)**
-$${gas_per_capita}$$
+
+$${gas\_per\_capita}$$
 
 **Outputs**
 - Clean tables of coefficients (with units and interpretation)
