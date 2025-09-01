@@ -47,9 +47,7 @@ This project builds a **county–year panel (2014–2023)** for California and e
 - **Equity views:** charger access per capita or per EV across income/urbanization groups
 
 **Model (schematic)**
-
-**The Cauchy-Schwarz Inequality**\
-$$\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)$$
+$${gas\_per\_capita}_{it} &=$$
 
 **Outputs**
 - Clean tables of coefficients (with units and interpretation)
