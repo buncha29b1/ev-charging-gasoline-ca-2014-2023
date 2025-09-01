@@ -1,7 +1,7 @@
 # ⚡ Driving Change: Assessing the Impact of Electric Vehicle Charging Infrastructure on Gasoline Consumption Across California Counties
 
 **Author:** Khoi Van  
-**Program:** Summer Research — Denison University
+**Program:** Denison Lisska Summer Scholars Research — Denison University
 
 ---
 
