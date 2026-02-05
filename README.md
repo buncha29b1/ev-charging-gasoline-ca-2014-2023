@@ -2,9 +2,7 @@
 
 **Author:** Khoi Van
 
-**Project Advisor:** Dr. Alexandre Scarcioffolo, Professor at Denison Data Analytics Department
-
-**Program:** Lisska Summer Scholars Research - Denison University
+**Project Advisor:** Dr. Alexandre Scarcioffolo, Professor, Data Analytics Department, Denison University
 
 ---
 
