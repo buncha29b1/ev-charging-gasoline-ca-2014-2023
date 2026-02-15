@@ -4,7 +4,7 @@
 
 **Project Advisor:** Dr. Alexandre Scarcioffolo, Professor, Data Analytics Department, Denison University
 
-**Link to Paper:** You can access the paper [here](https://github.com/buncha29b1/ev-charging-gasoline-ca-2014-2023/blob/main/Khoi%20Van%20-%20Summer%20Research%20Paper.pdf)
+**Link to Paper:** You can access the paper [here](https://github.com/buncha29b1/ev-charging-gasoline-ca-2014-2023/blob/main/Khoi%20Van%20-%20Summer%20Research%20Paper.pdf).
 
 ---
 
